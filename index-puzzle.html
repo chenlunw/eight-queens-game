@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数字华容道 4×4</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+  }
+
+  /* 标题区 */
+  .header {
+    text-align: center;
+  }
+  .header h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    background: linear-gradient(120deg, #f6d365, #fda085);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 2px;
+  }
+  .header .subtitle {
+    color: rgba(255,255,255,0.45);
+    font-size: 0.85rem;
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+
+  /* 状态栏 */
+  .stats {
+    display: flex;
+    gap: 32px;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-label {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .stat-value {
+    color: #fda085;
+    font-size: 1.8rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 棋盘 */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 6px;
+    width: 340px;
+    height: 340px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 18px;
+    padding: 10px;
+    box-shadow:
+      0 20px 60px rgba(0,0,0,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .tile {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.12s ease,
+                background 0.12s ease;
+    position: relative;
+
+    /* 默认数字块 */
+    background: linear-gradient(145deg, #2d3561, #1e2247);
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 700;
+    box-shadow:
+      0 4px 12px rgba(0,0,0,0.35),
+      0 1px 2px rgba(255,255,255,0.08) inset;
+  }
+
+  .tile:hover:not(.empty) {
+    transform: scale(1.04);
+    background: linear-gradient(145deg, #3b4580, #282d58);
+    box-shadow:
+      0 6px 18px rgba(0,0,0,0.4),
+      0 1px 2px rgba(255,255,255,0.12) inset;
+  }
+
+  .tile:active:not(.empty) {
+    transform: scale(0.94);
+    transition: transform 0.06s ease;
+  }
+
+  .tile.empty {
+    background: rgba(255,255,255,0.03);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    cursor: default;
+  }
+
+  /* 不同数字的颜色变化 */
+  .tile.n1  { background: linear-gradient(145deg, #e94560,  #b8304f); }
+  .tile.n2  { background: linear-gradient(145deg, #f58742,  #c96b35); }
+  .tile.n3  { background: linear-gradient(145deg, #f5a623,  #c7871c); }
+  .tile.n4  { background: linear-gradient(145deg, #4ecdc4,  #3ba19a); }
+  .tile.n5  { background: linear-gradient(145deg, #45b7d1,  #358ea6); }
+  .tile.n6  { background: linear-gradient(145deg, #a29bfe,  #7c75d4); }
+  .tile.n7  { background: linear-gradient(145deg, #fd79a8,  #cf5e86); }
+  .tile.n8  { background: linear-gradient(145deg, #00cec9,  #00a3a0); }
+  .tile.n9  { background: linear-gradient(145deg, #6c5ce7,  #5545c0); }
+  .tile.n10 { background: linear-gradient(145deg, #e17055,  #b55943); }
+  .tile.n11 { background: linear-gradient(145deg, #00b894,  #009170); }
+  .tile.n12 { background: linear-gradient(145deg, #0984e3,  #0769b5); }
+  .tile.n13 { background: linear-gradient(145deg, #e84393,  #bd3475); }
+  .tile.n14 { background: linear-gradient(145deg, #fdcb6e,  #cfa54f); }
+  .tile.n15 { background: linear-gradient(145deg, #2ecc71,  #25a35b); }
+
+  .tile.n1:hover:not(.empty)  { background: linear-gradient(145deg, #ff5e7a, #d43d5c); }
+  .tile.n2:hover:not(.empty)  { background: linear-gradient(145deg, #ff9a5c, #e07a40); }
+  .tile.n3:hover:not(.empty)  { background: linear-gradient(145deg, #ffb636, #db9925); }
+  .tile.n4:hover:not(.empty)  { background: linear-gradient(145deg, #5fe0d9, #48b5af); }
+  .tile.n5:hover:not(.empty)  { background: linear-gradient(145deg, #54cae5, #40a1b8); }
+  .tile.n6:hover:not(.empty)  { background: linear-gradient(145deg, #b8b2ff, #9089e8); }
+  .tile.n7:hover:not(.empty)  { background: linear-gradient(145deg, #ff8db6, #e47299); }
+  .tile.n8:hover:not(.empty)  { background: linear-gradient(145deg, #00e5e1, #00b7b4); }
+  .tile.n9:hover:not(.empty)  { background: linear-gradient(145deg, #8075f2, #6758d4); }
+  .tile.n10:hover:not(.empty) { background: linear-gradient(145deg, #f0886e, #c96c50); }
+  .tile.n11:hover:not(.empty) { background: linear-gradient(145deg, #00d2a3, #00a580); }
+  .tile.n12:hover:not(.empty) { background: linear-gradient(145deg, #1a98f0, #0a7bc8); }
+  .tile.n13:hover:not(.empty) { background: linear-gradient(145deg, #f55aa5, #d14385); }
+  .tile.n14:hover:not(.empty) { background: linear-gradient(145deg, #ffd780, #e0b85a); }
+  .tile.n15:hover:not(.empty) { background: linear-gradient(145deg, #3dde82, #30b86a); }
+
+  /* 按钮 */
+  .btn-row {
+    display: flex;
+    gap: 16px;
+  }
+  .btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    transition: all 0.2s ease;
+    color: #fff;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #fda085, #f6d365);
+    color: #1a1a2e;
+    box-shadow: 0 4px 15px rgba(253,160,133,0.35);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 6px 22px rgba(253,160,133,0.5);
+    transform: translateY(-1px);
+  }
+  .btn-primary:active { transform: scale(0.96); }
+  .btn-secondary {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .btn-secondary:hover {
+    background: rgba(255,255,255,0.18);
+    border-color: rgba(255,255,255,0.35);
+  }
+  .btn-secondary:active { transform: scale(0.96); }
+
+  /* 胜利弹窗 */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 10;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .overlay.show { display: flex; }
+  .win-dialog {
+    background: linear-gradient(145deg, #1e2247, #2d3561);
+    border-radius: 24px;
+    padding: 40px 50px;
+    text-align: center;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes popIn {
+    from { transform: scale(0.7); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+  .win-dialog .trophy { font-size: 4rem; }
+  .win-dialog h2 {
+    color: #fda085;
+    font-size: 1.6rem;
+    margin: 12px 0 6px;
+  }
+  .win-dialog p {
+    color: rgba(255,255,255,0.6);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+  .win-dialog .btn {
+    margin-top: 20px;
+  }
+
+  /* 移动端适配 */
+  @media (max-width: 420px) {
+    .board {
+      width: 300px;
+      height: 300px;
+      gap: 5px;
+      padding: 8px;
+      border-radius: 14px;
+    }
+    .tile {
+      font-size: 1.3rem;
+      border-radius: 10px;
+    }
+    .header h1 { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>数字华容道</h1>
+    <p class="subtitle">4×4 · 滑动排序</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">步数</div>
+      <div class="stat-value" id="moves">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">用时</div>
+      <div class="stat-value" id="timer">00:00</div>
+    </div>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" id="btnShuffle">🔄 重新打乱</button>
+    <button class="btn btn-secondary" id="btnReset">📋 重置</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="win-dialog">
+    <div class="trophy">🎉</div>
+    <h2>恭喜过关！</h2>
+    <p>
+      你用了 <strong id="winMoves">0</strong> 步<br>
+      用时 <strong id="winTime">00:00</strong>
+    </p>
+    <button class="btn btn-primary" id="btnPlayAgain">再来一局</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const SIZE = 4;
+  const TOTAL = SIZE * SIZE; // 16，空格用 0 表示
+
+  let board = [];          // 一维数组，长度为16，0=空格
+  let moves = 0;
+  let running = false;     // 计时器是否在走
+  let timerSec = 0;
+  let timerId = null;
+  let gameOver = false;    // 是否已胜利（禁止继续移动）
+
+  // DOM
+  const boardEl = document.getElementById('board');
+  const movesEl = document.getElementById('moves');
+  const timerEl = document.getElementById('timer');
+  const overlay = document.getElementById('overlay');
+  const winMovesEl = document.getElementById('winMoves');
+  const winTimeEl = document.getElementById('winTime');
+
+  // ============ 工具函数 ============
+  function emptyIndex() {
+    return board.indexOf(0);
+  }
+
+  function coordToIndex(row, col) {
+    return row * SIZE + col;
+  }
+
+  function indexToCoord(idx) {
+    return { row: Math.floor(idx / SIZE), col: idx % SIZE };
+  }
+
+  function isGoal(boardArr) {
+    // 目标：1,2,3,4 / 5,6,7,8 / 9,10,11,12 / 13,14,15,0
+    for (let i = 0; i < TOTAL - 1; i++) {
+      if (boardArr[i] !== i + 1) return false;
+    }
+    return boardArr[TOTAL - 1] === 0;
+  }
+
+  // 判断某个位置是否与空格相邻（上下左右）
+  function isAdjacent(idx) {
+    const ei = emptyIndex();
+    const e = indexToCoord(ei);
+    const t = indexToCoord(idx);
+    return (Math.abs(e.row - t.row) + Math.abs(e.col - t.col)) === 1;
+  }
+
+  // ============ 计时器 ============
+  function startTimer() {
+    if (running) return;
+    running = true;
+    timerId = setInterval(() => {
+      timerSec++;
+      renderTimer();
+    }, 1000);
+  }
+
+  function stopTimer() {
+    running = false;
+    if (timerId) { clearInterval(timerId); timerId = null; }
+  }
+
+  function resetTimer() {
+    stopTimer();
+    timerSec = 0;
+    renderTimer();
+  }
+
+  function renderTimer() {
+    const m = Math.floor(timerSec / 60);
+    const s = timerSec % 60;
+    timerEl.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+
+  // ============ 移动 ============
+  function moveTile(idx) {
+    if (gameOver) return false;
+    if (!isAdjacent(idx)) return false;
+
+    const ei = emptyIndex();
+    // 交换
+    [board[idx], board[ei]] = [board[ei], board[idx]];
+
+    moves++;
+    movesEl.textContent = moves;
+
+    // 首次移动时启动计时
+    if (moves === 1 && !running) startTimer();
+
+    renderBoard();
+
+    // 检查胜利
+    if (isGoal(board)) {
+      gameOver = true;
+      stopTimer();
+      setTimeout(showWin, 300);
+    }
+    return true;
+  }
+
+  // ============ 渲染 ============
+  function renderBoard() {
+    boardEl.innerHTML = '';
+    for (let i = 0; i < TOTAL; i++) {
+      const val = board[i];
+      const cell = document.createElement('div');
+      cell.classList.add('tile');
+      if (val === 0) {
+        cell.classList.add('empty');
+      } else {
+        cell.textContent = val;
+        cell.classList.add('n' + val);
+        cell.addEventListener('click', () => moveTile(i));
+      }
+      boardEl.appendChild(cell);
+    }
+  }
+
+  // ============ 胜利弹窗 ============
+  function showWin() {
+    winMovesEl.textContent = moves;
+    winTimeEl.textContent = timerEl.textContent;
+    overlay.classList.add('show');
+  }
+
+  function hideWin() {
+    overlay.classList.remove('show');
+  }
+
+  // ============ 重置 / 打乱 ============
+  function resetBoard(arr) {
+    board = arr.slice();
+    moves = 0;
+    gameOver = false;
+    movesEl.textContent = '0';
+    resetTimer();
+    hideWin();
+    renderBoard();
+  }
+
+  function resetToGoal() {
+    // 目标排列
+    const arr = [];
+    for (let i = 0; i < TOTAL; i++) arr.push(i === TOTAL - 1 ? 0 : i + 1);
+    resetBoard(arr);
+  }
+
+  function shuffle() {
+    // 随机打乱：从目标状态出发，随机走 200 步有效滑动
+    // 确保可解（因为从可解状态出发）
+    const arr = [];
+    for (let i = 0; i < TOTAL; i++) arr.push(i === TOTAL - 1 ? 0 : i + 1);
+    board = arr.slice();
+
+    let empty = TOTAL - 1;
+    const steps = 200 + Math.floor(Math.random() * 80); // 200~280 步
+    let lastEmpty = -1; // 避免来回走
+
+    for (let s = 0; s < steps; s++) {
+      const { row, col } = indexToCoord(empty);
+      const neighbors = [];
+      if (row > 0) neighbors.push(coordToIndex(row - 1, col));
+      if (row < SIZE - 1) neighbors.push(coordToIndex(row + 1, col));
+      if (col > 0) neighbors.push(coordToIndex(row, col - 1));
+      if (col < SIZE - 1) neighbors.push(coordToIndex(row, col + 1));
+
+      // 过滤掉上一次空格位置（避免简单来回）
+      const valid = neighbors.filter(n => n !== lastEmpty);
+      const pick = valid.length > 0
+        ? valid[Math.floor(Math.random() * valid.length)]
+        : neighbors[Math.floor(Math.random() * neighbors.length)];
+
+      lastEmpty = empty;
+      [board[empty], board[pick]] = [board[pick], board[empty]];
+      empty = pick;
+    }
+
+    // 如果碰巧是目标排列，再走一步
+    if (isGoal(board)) {
+      // 随便找空格旁边一个交换
+      const ei = emptyIndex();
+      const { row, col } = indexToCoord(ei);
+      const neighbors = [];
+      if (row > 0) neighbors.push(coordToIndex(row - 1, col));
+      if (row < SIZE - 1) neighbors.push(coordToIndex(row + 1, col));
+      if (col > 0) neighbors.push(coordToIndex(row, col - 1));
+      if (col < SIZE - 1) neighbors.push(coordToIndex(row, col + 1));
+      const pick = neighbors[Math.floor(Math.random() * neighbors.length)];
+      [board[ei], board[pick]] = [board[pick], board[ei]];
+    }
+
+    resetBoard(board);
+  }
+
+  // ============ 键盘操作 ============
+  document.addEventListener('keydown', (e) => {
+    if (gameOver) return;
+    const ei = emptyIndex();
+    const { row, col } = indexToCoord(ei);
+    let target = -1;
+    switch (e.key) {
+      case 'ArrowUp':    if (row < SIZE - 1) target = coordToIndex(row + 1, col); break;
+      case 'ArrowDown':  if (row > 0)         target = coordToIndex(row - 1, col); break;
+      case 'ArrowLeft':  if (col < SIZE - 1) target = coordToIndex(row, col + 1); break;
+      case 'ArrowRight': if (col > 0)         target = coordToIndex(row, col - 1); break;
+      default: return;
+    }
+    if (target >= 0) {
+      e.preventDefault();
+      moveTile(target);
+    }
+  });
+
+  // ============ 按钮事件 ============
+  document.getElementById('btnShuffle').addEventListener('click', shuffle);
+  document.getElementById('btnReset').addEventListener('click', resetToGoal);
+  document.getElementById('btnPlayAgain').addEventListener('click', shuffle);
+
+  // 点击遮罩关闭（但不影响主要交互）
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) hideWin();
+  });
+
+  // ============ 启动 ============
+  shuffle(); // 初始打乱
+
+  // 触摸设备支持轻扫（可选提升体验）
+  let touchStartX = 0, touchStartY = 0;
+  boardEl.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  });
+  boardEl.addEventListener('touchend', (e) => {
+    if (gameOver) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    const threshold = 30;
+    if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return;
+    const ei = emptyIndex();
+    const { row, col } = indexToCoord(ei);
+    let target = -1;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      // 水平滑动
+      if (dx > 0 && col > 0)         target = coordToIndex(row, col - 1);
+      else if (dx < 0 && col < SIZE - 1) target = coordToIndex(row, col + 1);
+    } else {
+      // 垂直滑动
+      if (dy > 0 && row > 0)         target = coordToIndex(row - 1, col);
+      else if (dy < 0 && row < SIZE - 1) target = coordToIndex(row + 1, col);
+    }
+    if (target >= 0) moveTile(target);
+  });
+})();
+</script>
+
+</body>
+</html>
